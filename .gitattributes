@@ -1,0 +1,2 @@
+model_pretrained_weights/*/*.ckpt filter=lfs diff=lfs merge=lfs -text
+*.tif filter=lfs diff=lfs merge=lfs -text
