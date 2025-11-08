@@ -1,0 +1,23 @@
+# =========================================
+# Inference Configuration
+# =========================================
+
+# Paths
+paths:
+  input_image_dir: "./input/" # Folder containing input images
+  model_weight_dir: "./model_pretrained_weights/" # Pretrained model weights
+  input_data_stats: "./model_pretrained_weights/statistics_subset_2019-2020-v4.pkl"
+  output_dir: "./output/" # Where predictions will be saved
+
+# Tiling / chunking parameters
+tiling:
+  chunk_size: 1024 # Tile height, width in pixels
+
+# Model to use
+model:
+  arch: "nico" # Architecture name of the model
+  model_id: "60688111-1" # Model iD in that architecture
+
+prediction:
+  patch_size: [200, 200]
+  overlap_size: [40, 40]

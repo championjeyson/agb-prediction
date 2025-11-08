@@ -1,0 +1,22 @@
+datasets==3.6.0
+numpy
+pandas
+matplotlib
+jupyterlab
+torch
+rasterio
+scikit-image
+pytorch_lightning
+pyproj
+h5py
+xarray
+dask
+rioxarray
+tqdm
+
+# # PyTorch + CUDA 12.1
+# torch==2.2.0
+# # torchvision==0.17.1+cu121
+# # torchaudio==2.2.0+cu121
+# # Tell pip where to find the CUDA-enabled wheels
+# -f https://download.pytorch.org/whl/cu121
