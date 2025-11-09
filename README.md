@@ -1,3 +1,6 @@
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/championjeyson/agb-prediction/blob/main/notebooks/demo_inference.ipynb)
+
+
 # agb-prediction
 Implementation of Sialelli et al. (2024)’s best global model for predicting above-ground biomass from optical and SAR data.
 
