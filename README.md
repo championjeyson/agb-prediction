@@ -1,4 +1,6 @@
+[![CI](https://github.com/championjeyson/agb-prediction/actions/workflows/ci.yml/badge.svg)](https://github.com/championjeyson/agb-prediction/actions/workflows/ci.yml)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/championjeyson/agb-prediction/blob/main/notebooks/demo_inference.ipynb)
+
 [![CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey?logo=creative-commons&logoColor=white)](https://creativecommons.org/licenses/by-nc/4.0/)
 [![Paper: Sialelli 2025](https://img.shields.io/badge/Paper-Sialelli+2025-green?logo=document&logoColor=white)](https://isprs-annals.copernicus.org/articles/X-G-2025/829/2025/)
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-AGBD-yellow?logo=huggingface)](https://huggingface.co/datasets/prs-eth/AGBD)
