@@ -1,0 +1,17 @@
+[project]
+name = "agb-prediction"
+version = "0.1.0"
+description = "A pipeline for above-ground biomass density prediction from Sentinel-2 and other data."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "CC BY-NC 4.0"}
+authors = [
+    {name = "Jason Champion", email = "champion.jeyson@gmail.com"}
+]
+keywords = ["remote sensing", "AGBD", "Sentinel-2", "machine learning", "deep learning"]
+
+[project.urls]
+Homepage = "https://github.com/championjeyson/agb-prediction"
+Documentation = "https://github.com/championjeyson/agb-prediction#readme"
+Source = "https://github.com/ghjuliasialelli/AGBD"  # Original repo reference
+Citation = "Sialelli, G., Peters, T., Wegner, J. D., and Schindler, K. (2025). AGBD: A Global-scale Biomass Dataset. ISPRS Ann. Photogramm. Remote Sens. Spatial Inf. Sci., X-G-2025, 829–838. https://doi.org/10.5194/isprs-annals-X-G-2025-829-2025"

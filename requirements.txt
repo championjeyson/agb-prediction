@@ -14,3 +14,4 @@ dask
 rioxarray
 tqdm
 pytest
+ruff
