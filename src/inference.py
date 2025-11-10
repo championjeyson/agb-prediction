@@ -67,6 +67,13 @@ def run_inference():
     ValueError
         If configuration values are inconsistent or invalid.
     """
+
+    temporarily_force_norm = True
+    FORCED_NORM_STRAT = {
+        'S2': 'pct', #'min_max',
+        'ALOS': 'pct',
+        'DEM': 'min_max',
+    }
     
     # Load model config and data statistics
     model_cfg = load_model_config()
@@ -88,7 +95,10 @@ def run_inference():
     # Reorder dimensions
     s2_processed_bands = s2_processed_bands.transpose("y", "x", "band")
     # Normalize bands according to the statistics used in the model
-    s2_processed_bands = normalize_bands(s2_processed_bands, model_norm_values['S2_bands'], s2_band_order, model_cfg['norm_strat'], NODATAVALS['S2_bands'])
+    if temporarily_force_norm:
+        s2_processed_bands = normalize_bands(s2_processed_bands, model_norm_values['S2_bands'], s2_band_order, FORCED_NORM_STRAT['S2'], NODATAVALS['S2_bands'])
+    else:
+        s2_processed_bands = normalize_bands(s2_processed_bands, model_norm_values['S2_bands'], s2_band_order, model_cfg['norm_strat'], NODATAVALS['S2_bands'])
     # Add data to data list
     data.extend([s2_processed_bands])
     data.extend([xds_encoded_coordinates])
@@ -98,7 +108,10 @@ def run_inference():
     xds_alos_gamma = process_alos_data(xds_s2_ref_band)
     # Normalize bands
     alos_order = ['HH', 'HV']
-    xds_alos_gamma = normalize_bands(xds_alos_gamma, model_norm_values['ALOS_bands'], alos_order, model_cfg['norm_strat'], NODATAVALS['ALOS_bands'])
+    if temporarily_force_norm:
+        xds_alos_gamma = normalize_bands(xds_alos_gamma, model_norm_values['ALOS_bands'], alos_order, FORCED_NORM_STRAT['ALOS'], NODATAVALS['ALOS_bands'])
+    else:
+        xds_alos_gamma = normalize_bands(xds_alos_gamma, model_norm_values['ALOS_bands'], alos_order, model_cfg['norm_strat'], NODATAVALS['ALOS_bands'])
     # Add data to list
     data.extend([xds_alos_gamma])
 
@@ -106,7 +119,10 @@ def run_inference():
     # Process
     xds_dem = process_dem_data(xds_s2_ref_band)
     # Normalize
-    xds_dem = normalize_bands(xds_dem, model_norm_values['DEM'], None, model_cfg['norm_strat'], NODATAVALS['DEM']) #
+    if temporarily_force_norm:
+        xds_dem = normalize_bands(xds_dem, model_norm_values['DEM'], None, FORCED_NORM_STRAT['DEM'], NODATAVALS['DEM']) #
+    else:
+        xds_dem = normalize_bands(xds_dem, model_norm_values['DEM'], None, model_cfg['norm_strat'], NODATAVALS['DEM']) #
     # Add data to list
     data.extend([xds_dem])
 
