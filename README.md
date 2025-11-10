@@ -7,8 +7,7 @@
 [![GitHub Repo](https://img.shields.io/badge/GitHub-AGBD-lightgrey?logo=github)](https://github.com/ghjuliasialelli/AGBD)
 
 > ⚠️ **Notice (November 10, 2025)**  
-> A part of the pipeline is currently under review with the original authors and will be updated in the next few days.  
-> Please check back soon — this warning will be removed once the review is complete.
+> A part of the pipeline is currently under review with the original authors and will be updated in the next few days. Please check back soon — this warning will be removed once the review is complete.
 
 ![image header](./figures/sialelli+2025_fig4_mod-01.png)
 
@@ -72,16 +71,14 @@ A ready-to-run notebook is available:
 
 ### 📦 Large Files
 
-Model weights and sample images are stored via **Git LFS**.  
-Install it before cloning the repository:
+Model weights and sample images are stored via **Git LFS**. Install it before cloning the repository:
 
 ```bash
 git lfs install
 ```
 
-If missing, the large files (e.g., model weights) won’t be downloaded.
-You can alternatively fetch the pretrained model from the 
-If missing, the large files (e.g., model weights) won’t be downloaded.
+If missing, the large files (e.g., model weights) won’t be downloaded. 
+
 You can alternatively fetch the pretrained model from the [original ETH Zürich repository](https://libdrive.ethz.ch/index.php/s/VPio6i5UlXTgir0?path=%2Fpretrained_weights). The "nico" architecture weights are required.
 
 ### Git Installation
@@ -104,8 +101,7 @@ See [LICENSE](LICENSE.md) for details.
 
 ## 🙏 Acknowledgment
 
-This implementation builds upon the foundational work of  
-**Sialelli et al. (2025)** and their open-source [AGBD codebase](https://github.com/ghjuliasialelli/AGBD).  
+This implementation builds upon the foundational work of  **Sialelli et al. (2025)** and their open-source [AGBD codebase](https://github.com/ghjuliasialelli/AGBD).  
 Please cite both this repository and the original publication when using the model.
 
 ## 🌍 Citation
