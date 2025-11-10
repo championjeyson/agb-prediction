@@ -63,7 +63,7 @@ python scripts/run_inference.py
 ### 2. Colab notebook
 
 A ready-to-run notebook is available:
-👉 ![Run on Google Colab](https://colab.research.google.com/github/championjeyson/agb-prediction/blob/main/notebooks/demo_inference.ipynb)
+👉 [Run on Google Colab](https://colab.research.google.com/github/championjeyson/agb-prediction/blob/main/notebooks/demo_inference.ipynb)
 
 ---
 
