@@ -293,4 +293,5 @@ class NicoNet(pl.LightningModule):
         Returns:
             Tensor of shape (batch_size, num_outputs, H, W)
         """
+        x = self.body(x)
         return x

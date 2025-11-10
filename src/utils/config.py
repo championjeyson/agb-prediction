@@ -9,7 +9,7 @@ Provides:
 
 from pathlib import Path
 import yaml
-from typing import Any, Dict
+from typing import Optional, Any, Dict
 
 class Config:
     """
@@ -23,7 +23,7 @@ class Config:
     cfg = Config.load("defaults.yaml")
     """
 
-    _cfg: Dict[str, Any] | None = None
+    _cfg: Optional[Dict[str, Any]] = None
 
     @classmethod
     def load(cls, filename="default.yaml"):

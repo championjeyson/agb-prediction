@@ -17,6 +17,7 @@ from rasterio.enums import Resampling
 import rasterio as rio
 from rasterio.vrt import WarpedVRT
 from pyproj import Transformer
+from typing import Optional
 
 from src.utils.config import *
 from src.constants import *
@@ -92,7 +93,7 @@ def process_s2_data() -> tuple[dict[str, xr.DataArray], xr.DataArray, xr.DataArr
 
     # Extract classification band for masking
     scl_band = processed_bands.pop('SCL')
-    mask = (scl_band == 6) | (scl_band == 11)
+    mask = (scl_band == NODATAVALS['S2_bands']) | (scl_band == 6) | (scl_band == 11)
 
     # Extract, convert and encode coordinates
     crs = xds_ref.rio.crs
@@ -211,7 +212,7 @@ def process_land_cover_data(xds_ref: xr.DataArray) -> xr.DataArray:
 def normalize_bands(
     bands_da: xr.DataArray,
     norm_values: dict,
-    band_order: list | None,
+    band_order: Optional[list],
     norm_strat: str,
     nodata_value=None
 ) -> xr.DataArray:
