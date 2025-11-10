@@ -1,3 +1,8 @@
+"""
+Helper functions and wrapper classes for training, validation, and inference
+with NicoNet / XceptionS2 models for pixel-wise AGBD estimation.
+"""
+
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -10,9 +15,13 @@ from src.utils.config import *
 # Load common config
 CFG = get_config("default.yaml")
 
+
+# ----------------------------------
+# Model wrapper
+# ----------------------------------
 class Net(nn.Module):
     """
-    This class is a wrapper around the different models [but, for now, only nico net is used and defined].
+    Wrapper around different models. Currently only NicoNet is implemented.
     """
     def __init__(self, model_name, in_features = 4, num_outputs = 1, channel_dims = (16, 32, 64, 128), 
                  max_pool = False, downsample = None, leaky_relu = False, patch_size = [15, 15], 
@@ -50,7 +59,13 @@ class Net(nn.Module):
         return self.model(x)
     
 
+# ----------------------------------
+# PyTorch Lightning module
+# ----------------------------------
 class Model(pl.LightningModule):
+    """
+    LightningModule wrapper for training and validation of pixel-wise AGBD models.
+    """
 
     def __init__(self, model, lr, step_size, gamma, patch_size, downsample, loss_fn):
         """
@@ -190,26 +205,52 @@ class Model(pl.LightningModule):
         optimizer = torch.optim.Adam(self.model.parameters(), lr = self.lr)
         return [optimizer], [torch.optim.lr_scheduler.StepLR(optimizer, step_size = self.step_size, gamma = self.gamma)]
     
-def get_pretrained_weights_dir_path():
+
+# ----------------------------------
+# Utilities
+# ----------------------------------
+
+def get_pretrained_weights_dir_path() -> Path:
+    """
+    Return the directory path containing pretrained weights from config.
+    Raises:
+        ValueError: if path is not set in CFG
+        FileNotFoundError: if path does not exist
+    """
     pretrained_weights_dir_path = CFG.get('paths', {}).get('model_weight_dir', None)
     if pretrained_weights_dir_path is None:
         raise ValueError('Path to pretrained weight folder not set in the configuration file.')
     pretrained_weights_dir_path = Path(pretrained_weights_dir_path)
     if not pretrained_weights_dir_path.exists():
-        raise FileNotFoundError(f'Path to pretrained weight folder does not exist: {pretrained_weights_dir_path.resolve().absoltue()}')
+        raise FileNotFoundError(f'Path to pretrained weight folder does not exist: {pretrained_weights_dir_path.resolve().absolute()}')
     return pretrained_weights_dir_path
 
 def predict_patch(model, patch, device):
     """
-    Predict the AGBD of a patch using the model.
+    Run AGBD (Above-Ground Biomass Density) prediction on a single image patch.
 
-    Args:
-    - model (torch.nn.Module) : the model to use for the prediction
-    - patch (torch.Tensor) : the patch to predict on
-    - device (torch.device) : the device to use for the prediction
+    Parameters
+    ----------
+    model : torch.nn.Module
+        Trained model wrapper (must expose `.model` for inference).
+    patch : np.ndarray or dask.array.core.Array
+        Input patch of shape (height, width, channels). 
+        If a Dask slice is provided, it will be converted to a NumPy array 
+        before inference.
+    device : torch.device
+        Device to run inference on (e.g. torch.device("cuda") or torch.device("cpu")).
 
-    Returns:
-    - preds (np.array) : the predictions of the model on the patch
+    Returns
+    -------
+    np.ndarray
+        2D array (height x width) of predicted AGBD values. 
+        Negative predictions are clipped to 0.
+
+    Notes
+    -----
+    - Converts input patch from (H, W, C) to (1, C, H, W) for PyTorch inference.
+    - All computations are done on `device` and results are returned on CPU as NumPy.
+    - This helper does not perform tiling or batching — only single-patch inference.
     """
     # Convert patch from dask array to numpy and set the right format for prediction
     patch = torch.from_numpy(np.array(patch)).float()

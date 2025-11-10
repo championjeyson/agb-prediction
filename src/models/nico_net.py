@@ -1,19 +1,25 @@
 """
+NicoNet / XceptionS2 CNN for pixel-wise Sentinel-2 analysis.
 
-A CNN designed for pixel-wise analysis of Sentinel-2 satellite images.
-"XceptionS2" builds on the separable convolution described by Chollet (2017) who proposed the Xception network.
-Any kind of down sampling is avoided (no pooling, striding, etc.).
+- Builds on the Xception separable convolution architecture (Chollet, 2017).
+- Avoids downsampling (no pooling or strides).
+- Multi-task extension included via `NicoNet`.
 
-All details about the architecture are described in:
-Lang, N., Schindler, K., Wegner, J.D.: Country-wide high-resolution vegetation height mapping with Sentinel-2,
-Remote Sensing of Environment, vol. 233 (2019) <https://arxiv.org/abs/1904.13270>
-
+References:
+- Lang, N., Schindler, K., Wegner, J.D., 2019. Country-wide high-resolution vegetation height mapping with Sentinel-2.
+  Remote Sensing of Environment, vol. 233. https://arxiv.org/abs/1904.13270
+- Original code for this module: https://github.com/ghjuliasialelli/AGBD
 """
 
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
+from typing import Optional
 
+
+# ----------------------------------
+# Convolution helpers
+# ----------------------------------
 
 def conv3x3(in_channels, out_channels, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
@@ -26,7 +32,12 @@ def conv1x1(in_channels, out_channels, stride=1):
     return nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, stride=stride, bias=True)
 
 
+# ----------------------------------
+# Separable Convolution
+# ----------------------------------
+
 class SeparableConv2d(nn.Module):
+    """Depthwise + Pointwise convolution."""
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, dilation=1):
         super(SeparableConv2d, self).__init__()
 
@@ -42,7 +53,12 @@ class SeparableConv2d(nn.Module):
         return x
 
 
+# ----------------------------------
+# Residual Blocks
+# ----------------------------------
+
 class PointwiseBlock(nn.Module):
+    """Residual block using 1x1 convolutions."""
 
     def __init__(self, in_channels, filters, norm_layer=nn.BatchNorm2d):
         super(PointwiseBlock, self).__init__()
@@ -89,6 +105,7 @@ class PointwiseBlock(nn.Module):
 
 
 class SepConvBlock(nn.Module):
+    """Residual block using separable convolutions."""
 
     def __init__(self, in_channels, filters, norm_layer=nn.BatchNorm2d):
         super(SepConvBlock, self).__init__()
@@ -154,6 +171,9 @@ def clamp_exp(x, min_x=-100, max_x=10):
     x = torch.clamp(x, min=min_x, max=max_x)
     return torch.exp(x)
 
+# ----------------------------------
+# Core XceptionS2 model
+# ----------------------------------
 
 class XceptionS2(nn.Module):
 
@@ -239,12 +259,11 @@ class XceptionS2(nn.Module):
             )
 
 
-# Multi Task Xception ###################################################################################################
-
-class NicoNet(pl.LightningModule) :
-    """
-        Module defining the Multi Task (MT) version of the Xception architecture. It is made of:
-    """
+# ----------------------------------
+# Multi-task wrapper
+# ----------------------------------
+class NicoNet(pl.LightningModule):
+    """Multi-task XceptionS2 model for pixel-wise regression."""
 
     def __init__(self, in_features, num_outputs, num_sepconv_blocks = 8, num_sepconv_filters = 728, long_skip = False):
         """
@@ -265,6 +284,13 @@ class NicoNet(pl.LightningModule) :
                                 freeze_last_mean=False)
 
 
-    def forward(self, x) :
-        x = self.body(x) # (batch_size, intermediary_outputs, size, size)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the multi-task body.
+
+        Args:
+            x: input tensor
+        Returns:
+            Tensor of shape (batch_size, num_outputs, H, W)
+        """
         return x

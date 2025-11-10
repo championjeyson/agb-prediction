@@ -1,5 +1,28 @@
+"""
+AGB Inference Pipeline
+======================
+
+This module orchestrates the end-to-end Above-Ground Biomass (AGB) prediction workflow:
+it loads configuration files, prepares input satellite and ancillary datasets, normalizes them,
+and runs inference with a trained deep learning model.
+
+Main steps:
+------------
+1. Load configuration and normalization statistics.
+2. Process Sentinel-2, ALOS, DEM, and Land Cover inputs to match model expectations.
+3. Normalize each dataset based on stored statistics.
+4. Combine all bands into a single, chunked data cube.
+5. Run model inference and export the resulting AGB raster.
+
+Typical usage:
+--------------
+>>> from src.inference import run_inference
+>>> run_inference()
+"""
+
 import xarray as xr
 import torch
+from pathlib import Path
 
 from src.constants import *
 from src.imagery_processing import (
@@ -22,6 +45,29 @@ CFG = get_config("default.yaml")
 CHUNKSIZE = get_chunk_size(CFG)
 
 def run_inference():
+    """
+    Execute the full AGB inference workflow.
+
+    This function:
+    - Loads model and normalization configurations.
+    - Processes all imagery sources (Sentinel-2, ALOS, DEM, Land Cover).
+    - Normalizes and stacks them into a single xarray DataArray.
+    - Runs prediction using a pretrained PyTorch model.
+    - Exports the predicted AGB raster to GeoTIFF.
+
+    Returns
+    -------
+    int
+        0 if the pipeline completes successfully.
+
+    Raises
+    ------
+    FileNotFoundError
+        If any required configuration or input file is missing.
+    ValueError
+        If configuration values are inconsistent or invalid.
+    """
+    
     # Load model config and data statistics
     model_cfg = load_model_config()
     model_norm_values = load_model_data_statistics()

@@ -1,3 +1,14 @@
+"""
+Model initialization and inference utilities for AGB prediction.
+
+This module provides:
+- Functions to load model configurations and data statistics.
+- Helpers to instantiate and restore PyTorch models for inference.
+- A patch-based prediction workflow using raster I/O and progress tracking.
+
+All configurations are read from the YAML file specified in the repository's configs directory.
+"""
+
 import pickle
 import rasterio as rio
 from rasterio.windows import Window
@@ -10,12 +21,28 @@ from src.models.helper import *
 CFG = get_config("default.yaml")
 
 def load_model_config():
+    """
+    Load the model configuration (.pkl) file.
+
+    Returns
+    -------
+    dict
+        Dictionary containing model hyperparameters and settings loaded from the pickled configuration file.
+    """
     model_pkl_config_path = Path(CFG['paths']['model_weight_dir']) / CFG['model']['arch'] / (CFG['model']['model_id'] + '_cfg.pkl')
     with open(model_pkl_config_path, 'rb') as f:
         cfg = pickle.load(f)
     return cfg
 
 def load_model_data_statistics():
+    """
+    Load precomputed data statistics (.pkl) used for normalization or scaling.
+
+    Returns
+    -------
+    dict
+        Dictionary of input data statistics (e.g., means, standard deviations).
+    """
     input_pkl_data_stat_path = Path(CFG['paths']['input_data_stats'])
     with open(input_pkl_data_stat_path, 'rb') as f:
         data_stats = pickle.load(f)
@@ -23,7 +50,14 @@ def load_model_data_statistics():
 
 
 def load_inference_model(arch, model_id, model_cfg, device):
-    """Load and return a PyTorch model ready for inference."""
+    """
+    Load precomputed data statistics (.pkl) used for normalization or scaling.
+
+    Returns
+    -------
+    dict
+        Dictionary of input data statistics (e.g., means, standard deviations).
+    """
 
     net = Net(
         model_name=model_cfg['arch'],
@@ -47,6 +81,8 @@ def load_inference_model(arch, model_id, model_cfg, device):
     )
 
     ckpt_path = get_pretrained_weights_dir_path() / arch / f"{model_id}_best.ckpt"
+    if not ckpt_path.exists():
+        raise FileNotFoundError(f"Checkpoint not found at: {ckpt_path.resolve()}")
     state_dict = torch.load(ckpt_path, map_location=device)['state_dict']
 
     # # Fix potential key mismatches
@@ -60,7 +96,43 @@ def load_inference_model(arch, model_id, model_cfg, device):
 
     return model.model
 
-def predict_AGB(input_cube, inf_model, device, output_path, crs, transform, mask=None, return_array=False):#patch_size=(200, 200), overlap_size=(100,100), return_array=False):
+def predict_AGB(input_cube, inf_model, device, output_path, crs, transform,
+                mask=None, return_array=False):
+    """
+    Run patch-based AGBD prediction and export results as a GeoTIFF.
+
+    Parameters
+    ----------
+    input_cube : np.ndarray or dask.array.core.Array
+        Input raster cube with shape (height, width, channels).
+    inf_model : torch.nn.Module
+        Trained inference model (in eval mode).
+    device : torch.device
+        Torch device for computation.
+    output_path : str or Path
+        Destination path for the output GeoTIFF file.
+    crs : rasterio.crs.CRS or str
+        Coordinate reference system of the output.
+    transform : affine.Affine
+        GeoTransform defining pixel coordinates.
+    mask : np.ndarray, optional
+        Boolean mask (True for no-data areas). Masked predictions will be set to NaN.
+    return_array : bool, optional
+        If True, also return the in-memory prediction array.
+
+    Returns
+    -------
+    np.ndarray or None
+        2D array of predicted AGBD values if `return_array=True`, otherwise None.
+
+    Notes
+    -----
+    - The prediction is performed patch by patch to avoid memory overflow.
+    - Patches overlap by a configurable size (`CFG['prediction']['overlap_size']`).
+    - Output GeoTIFF is written incrementally using rasterio’s windowed writes.
+    - A progress bar via `tqdm` tracks inference progress.
+    """
+
     # Extract tile size (ty, tx), patch size (py, px), and overlap size (oy, ox)
     ty, tx = input_cube.shape[:2]
     py, px = CFG['prediction']['patch_size']

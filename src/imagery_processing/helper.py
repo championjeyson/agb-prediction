@@ -1,3 +1,17 @@
+"""
+Helper functions for raster imagery processing in the AGB prediction pipeline.
+
+Includes:
+- File path retrieval for input images (Sentinel-2, ALOS, DEM, Land Cover)
+- Filling missing values (NaNs) chunk-wise
+- Encoding geographic coordinates
+- Normalizing raster bands
+- Aligning rasters to reference datasets
+
+All functions are designed to handle large raster datasets efficiently,
+leveraging Dask and xarray where appropriate.
+"""
+
 import numpy as np
 from scipy import ndimage
 import xarray as xr
@@ -13,51 +27,85 @@ from src.utils.config import *
 CFG = get_config("default.yaml")
 CHUNKSIZE = get_chunk_size(CFG)
 
-# Paths
+# ---------------------------
+# Input image paths
+# ---------------------------
 
-def get_input_image_dir_path():
+def get_input_image_dir_path() -> Path:
+    """
+    Retrieve the input image directory from the configuration.
+
+    Returns
+    -------
+    Path
+        Path to the folder containing input images.
+
+    Raises
+    ------
+    ValueError
+        If the input directory is not set in the config.
+    FileNotFoundError
+        If the folder does not exist on disk.
+    """
     input_image_dir_path = CFG.get('paths', {}).get('input_image_dir', None)
     if input_image_dir_path is None:
         raise ValueError('Path to input image folder not set in the configuration file.')
     input_image_dir_path = Path(input_image_dir_path)
     if not input_image_dir_path.exists():
-        raise FileNotFoundError(f'Path to input image folder does not exist: {input_image_dir_path.resolve().absoltue()}')
+        raise FileNotFoundError(
+            f'Path to input image folder does not exist: {input_image_dir_path.resolve().absolute()}'
+        )
     return input_image_dir_path
 
-def get_s2_band_path(band):
+def get_s2_band_path(band: str) -> Path:
+    """Return the file path for a Sentinel-2 band."""
     input_image_dir_path = get_input_image_dir_path()
     path = input_image_dir_path / f'S2_{band}.tif'
     if not path.exists():
-        raise FileNotFoundError(f'Path to input image does not exist: {path.resolve().absoltue()}')
+        raise FileNotFoundError(f'Path to input image does not exist: {path.resolve().absolute()}')
     return path
 
-def get_alos_path():
+def get_alos_path() -> Path:
+    """Return the file path for the ALOS PALSAR2 raster."""
     input_image_dir_path = get_input_image_dir_path()
     path = input_image_dir_path / f'SAR_PALSAR2.tif'
     if not path.exists():
-        raise FileNotFoundError(f'Path to input image does not exist: {path.resolve().absoltue()}')
+        raise FileNotFoundError(f'Path to input image does not exist: {path.resolve().absolute()}')
     return path
 
-def get_dem_path():
+def get_dem_path() -> Path:
+    """Return the file path for the AW3D30 DEM raster."""
     input_image_dir_path = get_input_image_dir_path()
     path = input_image_dir_path / f'AW3D30.tif'
     if not path.exists():
-        raise FileNotFoundError(f'Path to input image does not exist: {path.resolve().absoltue()}')
+        raise FileNotFoundError(f'Path to input image does not exist: {path.resolve().absolute()}')
     return path
 
-def get_land_cover_path():
+def get_land_cover_path() -> Path:
+    """Return the file path for the CGLS_LC100 land cover raster."""
     input_image_dir_path = get_input_image_dir_path()
     path = input_image_dir_path / f'CGLS_LC100.tif'
     if not path.exists():
-        raise FileNotFoundError(f'Path to input image does not exist: {path.resolve().absoltue()}')
+        raise FileNotFoundError(f'Path to input image does not exist: {path.resolve().absolute()}')
     return path
 
-# Fill nans
-
-def fill_na_chunkwise(block):
+# ---------------------------
+# Fill missing values
+# ---------------------------
+def fill_na_chunkwise(block: np.ndarray) -> np.ndarray:
     """
-    Fill NaNs in a 2D (or 3D with last axis as band) numpy array using nearest neighbor.
-    Works **within the block only**.
+    Fill NaNs in a 2D or 3D numpy array using nearest neighbor interpolation.
+    Works within a single chunk only.
+
+    Parameters
+    ----------
+    block : np.ndarray
+        Input array (2D or 3D with last axis as band).
+
+    Returns
+    -------
+    np.ndarray
+        Array with NaNs filled using nearest neighbor values.
     """
     # if 3D (y, x, band), fill each band separately
     if block.ndim == 3:
@@ -79,7 +127,22 @@ def fill_na_chunkwise(block):
         else:
             return block
         
-def fill_na(xds, overlap=25):
+def fill_na(xds: xr.DataArray, overlap: int = 25) -> xr.DataArray:
+    """
+    Fill NaNs in an xarray.DataArray lazily using Dask's map_overlap.
+
+    Parameters
+    ----------
+    xds : xr.DataArray
+        Input raster dataset.
+    overlap : int, optional
+        Number of pixels to overlap between chunks. Default is 25.
+
+    Returns
+    -------
+    xr.DataArray
+        Raster with NaNs filled.
+    """
     xds_filled = xr.DataArray(
         xds.data.map_overlap(
                 fill_na_chunkwise,
@@ -93,9 +156,25 @@ def fill_na(xds, overlap=25):
         )
     return xds_filled
 
-# Encoding
+# ---------------------------
+# Coordinate encoding
+# ---------------------------
+def encode_coordinates(xds: xr.DataArray, transformer) -> tuple[da.Array, da.Array, da.Array, da.Array]:
+    """
+    Encode raster coordinates as cosine and sine values for use in ML models.
 
-def encode_coordinates(xds, transformer):
+    Parameters
+    ----------
+    xds : xr.DataArray
+        Reference raster for dimensions and CRS.
+    transformer : callable
+        Function to transform coordinates to lon/lat.
+
+    Returns
+    -------
+    tuple of dask.array
+        Cosine and sine encoded latitude and longitude grids.
+    """
     width, height = xds.rio.width, xds.rio.height
 
     top_left_corner = [xds.x[0], xds.y[0]]
@@ -122,11 +201,28 @@ def encode_coordinates(xds, transformer):
 
     return lat_grid_cos_encoded, lat_grid_sin_encoded, lon_grid_cos_encoded, lon_grid_sin_encoded
 
-# Normalize bands
-
-def normalize_data_xr(da, norm_values, norm_strat, nodata_value=None):
+# ---------------------------
+# Normalization
+# ---------------------------
+def normalize_data_xr(da: xr.DataArray, norm_values: dict, norm_strat: str, nodata_value=None) -> xr.DataArray:
     """
     Normalize an xarray.DataArray lazily (supports Dask).
+
+    Parameters
+    ----------
+    da : xr.DataArray
+        Input data array.
+    norm_values : dict
+        Dictionary containing normalization parameters (mean/std, percentiles, min/max).
+    norm_strat : str
+        Normalization strategy: "mean_std", "pct", or "min_max".
+    nodata_value : optional
+        Value to treat as no-data (set to zero after normalization).
+
+    Returns
+    -------
+    xr.DataArray
+        Normalized raster with all bands chunked together.
     """
     if norm_strat == "mean_std":
         mean, std = norm_values["mean"], norm_values["std"]
@@ -152,9 +248,27 @@ def normalize_data_xr(da, norm_values, norm_strat, nodata_value=None):
     else:
         return normed.chunk({'y': CHUNKSIZE, 'x': CHUNKSIZE})
 
-# Dataset alignment
- 
-def load_and_align_raster_to_reference(path_to_raster, xds_ref, resampling=Resampling.nearest):
+# ---------------------------
+# Raster alignment
+# ---------------------------
+def load_and_align_raster_to_reference(path_to_raster: str, xds_ref: xr.DataArray, resampling=Resampling.nearest) -> xr.DataArray:
+    """
+    Load a raster and reproject/resample it to match a reference xarray.DataArray.
+
+    Parameters
+    ----------
+    path_to_raster : str
+        Path to the input raster.
+    xds_ref : xr.DataArray
+        Reference dataset defining CRS, transform, width, and height.
+    resampling : rasterio.enums.Resampling, optional
+        Resampling method. Default is nearest neighbor.
+
+    Returns
+    -------
+    xr.DataArray
+        Raster aligned to reference dataset with Dask chunking applied.
+    """
     with rio.open(path_to_raster) as src:
         with WarpedVRT(
             src,

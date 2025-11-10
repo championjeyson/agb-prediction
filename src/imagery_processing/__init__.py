@@ -1,3 +1,16 @@
+"""
+Image processing functions for the AGB prediction pipeline.
+
+This module handles loading, aligning, and preprocessing remote sensing data, including:
+- Sentinel-2 multispectral bands
+- ALOS PALSAR2 radar data
+- Digital Elevation Model (DEM)
+- Land cover data
+
+Functions mostly return xarray.DataArray objects with Dask chunking for efficient lazy computation,
+and encode additional features such as geographic coordinates or land cover transformations.
+"""
+
 from pathlib import Path
 import rioxarray
 from rasterio.enums import Resampling
@@ -13,7 +26,26 @@ from src.imagery_processing.helper import *
 CFG = get_config("default.yaml")
 CHUNKSIZE = get_chunk_size(CFG)
 
-def process_s2_data():
+# ---------------------------
+# Sentinel-2 processing
+# ---------------------------
+def process_s2_data() -> tuple[dict[str, xr.DataArray], xr.DataArray, xr.DataArray, any, xr.DataArray]:
+    """
+    Load, reproject, and preprocess Sentinel-2 bands.
+
+    Returns
+    -------
+    processed_bands : dict
+        Dictionary of preprocessed Sentinel-2 bands (excluding SCL).
+    mask : xr.DataArray
+        Boolean mask identifying clouds and shadows using the SCL band.
+    xds_ref : xr.DataArray
+        Reference raster (used for alignment).
+    crs : CRS
+        Coordinate Reference System of the reference raster.
+    encoded_da : xr.DataArray
+        Latitude/longitude encoded as cosine/sine features for ML input.
+    """
     # Load reference band
     ref_band_path = get_s2_band_path(S2_REF_BAND)
     xds_ref = rioxarray.open_rasterio(
@@ -82,7 +114,23 @@ def process_s2_data():
 
     return processed_bands, mask, xds_ref, crs, encoded_da
 
-def process_alos_data(xds_ref):
+# ---------------------------
+# ALOS processing
+# ---------------------------
+def process_alos_data(xds_ref: xr.DataArray) -> xr.DataArray:
+    """
+    Load, align, fill, and gamma-transform ALOS PALSAR2 data.
+
+    Parameters
+    ----------
+    xds_ref : xr.DataArray
+        Reference raster for alignment.
+
+    Returns
+    -------
+    xr.DataArray
+        Preprocessed ALOS raster with gamma-naught transformation applied.
+    """
     alos_image_path = get_alos_path()
     xds_alos = load_and_align_raster_to_reference(alos_image_path, xds_ref, resampling=Resampling.bilinear)
     xds_alos = xds_alos.assign_coords(band=list(xds_alos.attrs['long_name']))
@@ -94,13 +142,44 @@ def process_alos_data(xds_ref):
     xds_alos_gamma = 10 * np.log10(xds_alos_gamma ** 2) - 83.0
     return xds_alos_gamma
 
-def process_dem_data(xds_ref):
+# ---------------------------
+# DEM processing
+# ---------------------------
+def process_dem_data(xds_ref: xr.DataArray) -> xr.DataArray:
+    """Load, align, and fill missing values for Digital Elevation Model (DEM) data.
+
+    Parameters
+    ----------
+    xds_ref : xr.DataArray
+        Reference raster for alignment.
+
+    Returns
+    -------
+    xr.DataArray
+        Preprocessed DEM raster.
+    """
     dem_image_path = get_dem_path()
     xds_dem = load_and_align_raster_to_reference(dem_image_path, xds_ref, resampling=Resampling.bilinear)
     xds_dem = fill_na(xds_dem)
     return xds_dem
 
-def process_land_cover_data(xds_ref):
+# ---------------------------
+# Land cover processing
+# ---------------------------
+def process_land_cover_data(xds_ref: xr.DataArray) -> xr.DataArray:
+    """
+    Load, align, fill, and encode land cover raster as cosine/sine/probability features.
+
+    Parameters
+    ----------
+    xds_ref : xr.DataArray
+        Reference raster for alignment.
+
+    Returns
+    -------
+    xr.DataArray
+        Encoded land cover raster with dimensions (y, x, band) for ML input.
+    """
     land_cover_image_path = get_land_cover_path()
     xds_lc = load_and_align_raster_to_reference(land_cover_image_path, xds_ref, resampling=Resampling.nearest)
     xds_lc = fill_na(xds_lc)
@@ -126,9 +205,36 @@ def process_land_cover_data(xds_ref):
     return xds_lc_encoded
 
 
-def normalize_bands(bands_da, norm_values, band_order, norm_strat, nodata_value=None):
+# ---------------------------
+# Band normalization
+# ---------------------------
+def normalize_bands(
+    bands_da: xr.DataArray,
+    norm_values: dict,
+    band_order: list | None,
+    norm_strat: str,
+    nodata_value=None
+) -> xr.DataArray:
     """
-    Normalize all bands in an xarray.DataArray lazily.
+    Normalize all bands in an xarray.DataArray lazily, either in order or using all bands.
+
+    Parameters
+    ----------
+    bands_da : xr.DataArray
+        Input bands dataset.
+    norm_values : dict
+        Normalization parameters for each band.
+    band_order : list or None
+        If given, normalize bands in this order.
+    norm_strat : str
+        Normalization strategy: "mean_std", "pct", "min_max".
+    nodata_value : optional
+        Value treated as no-data (set to zero after normalization).
+
+    Returns
+    -------
+    xr.DataArray
+        Normalized dataset with same dimensions and Dask chunking.
     """
     if band_order is None:
         da_band_normed = normalize_data_xr(bands_da, norm_values, norm_strat, nodata_value)
