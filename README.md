@@ -6,11 +6,33 @@
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-AGBD-yellow?logo=huggingface)](https://huggingface.co/datasets/prs-eth/AGBD)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-AGBD-lightgrey?logo=github)](https://github.com/ghjuliasialelli/AGBD)
 
-
-
-
+![image header](figures/sialelli+2025_fig4_mod-01.png.png)
 
 # Above-Ground Biomass (AGB) Prediction
+
+This repository implements the inference part of the best model described and trained on the **AGBD** (Above-Ground Biomass Dataset) described in:
+
+> **Sialelli, G., Peters, T., Wegner, J. D., and Schindler, K. (2025).**  
+> *AGBD: A Global-scale Biomass Dataset.*  
+> *ISPRS Ann. Photogramm. Remote Sens. Spatial Inf. Sci.*, X-G-2025, 829–838.  
+> [https://doi.org/10.5194/isprs-annals-X-G-2025-829-2025](https://doi.org/10.5194/isprs-annals-X-G-2025-829-2025)
+
+---
+## 🚀 Overview
+
+This project implements the model pipeline for **biomass inference from multi-sensor satellite imagery**, using reproducible Python workflows and GEE preprocessing scripts.
+
+It includes:
+- Configurable model setup (`configs/`)
+- Pretrained model weights for the best architecture and model 
+- Example notebook for inference, with example data
+- CI-tested modular Python codebase
+
+Not directly included into this repository, it also links to the Google Earh Engine code that extracts the input as required for any area of intererest:
+[Google Earth Engine Code](https://code.earthengine.google.com/af9dcf4d48f154082386ae82de1c69f6)
+
+## OLD
+
 This repository implements the best model for AGB inference described in:
 
 **Sialelli, G., Peters, T., Wegner, J. D., and Schindler, K. (2025).** AGBD: A Global-scale Biomass Dataset. ISPRS Ann. Photogramm. Remote Sens. Spatial Inf. Sci., X-G-2025, 829–838. https://doi.org/10.5194/isprs-annals-X-G-2025-829-2025
