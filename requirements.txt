@@ -13,3 +13,4 @@ xarray
 dask
 rioxarray
 tqdm
+pytest

@@ -26,7 +26,7 @@ class Config:
     _cfg: Optional[Dict[str, Any]] = None
 
     @classmethod
-    def load(cls, filename="default.yaml"):
+    def load(cls, filename="default.yaml", force_reload=False):
         """
         Load configuration from a YAML file.
 
@@ -35,6 +35,8 @@ class Config:
         filename : str, optional
             Name of the YAML configuration file located in the `configs/` directory.
             Defaults to "default.yaml".
+        force_reload: bool, optional
+            Only load once per session so this argument allows to force that and reload anyway.
 
         Returns
         -------
@@ -45,8 +47,7 @@ class Config:
         -----
         Only loads the file once. Subsequent calls return the cached configuration.
         """
-        if cls._cfg is None:
-            # Resolve path from repo root
+        if cls._cfg is None or force_reload:
             config_path = (
                 Path(__file__).resolve().parent.parent.parent / "configs" / filename
             )
@@ -92,4 +93,4 @@ def get_chunk_size(cfg):
     try:
         return cfg['tiling']['chunk_size']
     except KeyError:
-        raise ValueError("chunk_size missing in the configuration file.")
+        raise KeyError("chunk_size missing in the configuration file.")
