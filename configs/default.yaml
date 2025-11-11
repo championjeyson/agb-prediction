@@ -16,7 +16,7 @@ tiling:
 # Model to use
 model:
   arch: "nico" # Architecture name of the model
-  model_id: "18693595-1" # "60688111-1" # Model iD in that architecture
+  model_id: "60688111-1" # Model iD in that architecture
 
 prediction:
   patch_size: [200, 200]
