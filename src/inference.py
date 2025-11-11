@@ -68,7 +68,7 @@ def run_inference():
         If configuration values are inconsistent or invalid.
     """
 
-    temporarily_force_norm = True
+    temporarily_force_norm = False
     FORCED_NORM_STRAT = {
         'S2': 'pct', #'min_max',
         'ALOS': 'pct',
