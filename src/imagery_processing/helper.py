@@ -113,9 +113,12 @@ def fill_na_chunkwise(block: np.ndarray) -> np.ndarray:
         for b in range(block.shape[2]):
             mask = np.isnan(block[:, :, b])
             if mask.any():
-                # distance_transform_edt with return_indices
-                indices = ndimage.distance_transform_edt(mask, return_indices=True)
-                filled[:, :, b] = block[tuple(indices)]
+                indices = ndimage.distance_transform_edt(
+                    mask,
+                    return_distances=False,
+                    return_indices=True
+                )
+                filled[:, :, b] = block[:, :, b][indices[0], indices[1]]
             else:
                 filled[:, :, b] = block[:, :, b]
         return filled
@@ -143,6 +146,16 @@ def fill_na(xds: xr.DataArray, overlap: int = 25) -> xr.DataArray:
     xr.DataArray
         Raster with NaNs filled.
     """
+    # Determine chunk sizes along y and x
+    chunk_y, chunk_x = xds.chunks[0][0], xds.chunks[1][0]  # assume uniform chunking
+
+    # Validate overlap
+    if overlap > chunk_y or overlap > chunk_x:
+        raise ValueError(
+            f"Requested overlap ({overlap}) is larger than the chunk size "
+            f"(y: {chunk_y}, x: {chunk_x}). Reduce overlap or rechunk the array."
+        )
+    
     xds_filled = xr.DataArray(
         xds.data.map_overlap(
                 fill_na_chunkwise,
