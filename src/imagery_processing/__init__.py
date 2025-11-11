@@ -98,6 +98,7 @@ def process_s2_data() -> tuple[dict[str, xr.DataArray], xr.DataArray, xr.DataArr
     # Add offset
     for band in processed_bands:
         processed_bands[band] += 0.1
+        print('DO +0.1')
 
     # Extract, convert and encode coordinates
     crs = xds_ref.rio.crs
