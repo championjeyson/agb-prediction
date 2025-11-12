@@ -46,7 +46,7 @@ The pipeline uses the following input data layers, extracted as they are by defa
 
 📜 **GEE script** for input data download:  
 To apply the pipeline to another area of interest, you can use this script to prepare all necessary inputs:  
-👉 [Google Earth Engine Code](https://code.earthengine.google.com/af9dcf4d48f154082386ae82de1c69f6)
+👉 [Google Earth Engine Code](https://code.earthengine.google.com/bd14bff4d9f98f1d7d25856caf1359b1)
 
 The pipeline handles reprojection, resampling, and encoding automatically.
 
