@@ -6,10 +6,8 @@
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-AGBD-yellow?logo=huggingface)](https://huggingface.co/datasets/prs-eth/AGBD)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-AGBD-lightgrey?logo=github)](https://github.com/ghjuliasialelli/AGBD)
 
-> ⚠️ **Notice (November 10, 2025)**  
-> A part of the pipeline is currently under review with the original authors and will be updated in the next few days. Please check back soon — this warning will be removed once the review is complete.
-
 ![image header](./figures/sialelli+2025_fig4_mod-01.png)
+![image output](./figures/agb_map_cypress_2023.jpg)
 
 # Above-Ground Biomass (AGB) Prediction
 
@@ -101,7 +99,7 @@ See [LICENSE](LICENSE.md) for details.
 
 ## 🙏 Acknowledgment
 
-This implementation builds upon the foundational work of  **Sialelli et al. (2025)** and their open-source [AGBD codebase](https://github.com/ghjuliasialelli/AGBD).  
+This implementation builds upon the foundational work of  **Sialelli et al. (2025)** and their open-source [AGBD codebase](https://github.com/ghjuliasialelli/AGBD). Many thanks to Ghjulia for openly sharing her work and for her friendly and thoughtful replies to my emails.
 Please cite both this repository and the original publication when using the model.
 
 ## 🌍 Citation
